@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2563eb">
+<title>Dịch Việt ⇄ Anh (Mỹ)</title>
+<style>
+  :root{
+    --do:#E15C4A; --xanhduong:#2563eb; --nen:#f4f5f7; --trang:#fff;
+    --xam:#8a8f98; --den:#1c1e21; --vi:#1f8a4c; --en:#2563eb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--nen); color:var(--den);
+    display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+  }
+  header{
+    background:var(--xanhduong); color:#fff; text-align:center;
+    padding:12px 10px; font-weight:700; font-size:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.15); flex-shrink:0;
+  }
+  header small{display:block;font-weight:400;font-size:12px;opacity:.9;margin-top:2px}
+
+  #chat{
+    flex:1; overflow-y:auto; padding:14px 12px 20px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .row{display:flex; flex-direction:column; max-width:85%}
+  .row.vi{align-self:flex-start; align-items:flex-start}
+  .row.en{align-self:flex-end; align-items:flex-end}
+  .who{font-size:11px; color:var(--xam); margin:0 6px 3px}
+  .bubble{
+    padding:11px 14px; border-radius:16px; font-size:17px; line-height:1.4;
+    box-shadow:0 1px 2px rgba(0,0,0,.08); word-break:break-word;
+  }
+  .row.vi .bubble{background:#fff; border:1px solid #e3e5e8; border-bottom-left-radius:4px}
+  .row.en .bubble{background:#dbeafe; border:1px solid #bfdbfe; border-bottom-right-radius:4px}
+  .orig{font-size:13px; color:var(--xam); margin:4px 6px 0; font-style:italic}
+  .bubble .speak{
+    display:inline-block; margin-left:8px; cursor:pointer;
+    font-size:15px; opacity:.6; vertical-align:middle;
+  }
+  .hint{text-align:center;color:var(--xam);font-size:14px;margin:auto;padding:20px;line-height:1.6}
+
+  #status{
+    text-align:center; font-size:14px; padding:6px; min-height:30px;
+    color:var(--xanhduong); font-weight:600; flex-shrink:0;
+  }
+  #status.listening{color:var(--vi)}
+  #dbg{text-align:center;font-size:12px;color:var(--xam);padding:0 8px 4px;min-height:16px}
+
+  .controls{
+    display:flex; gap:10px; padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+    background:var(--trang); box-shadow:0 -2px 10px rgba(0,0,0,.08); flex-shrink:0;
+  }
+  .mic{
+    flex:1; border:none; border-radius:16px; padding:16px 8px; color:#fff;
+    font-size:16px; font-weight:700; cursor:pointer; transition:transform .1s, filter .2s;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .mic:active{transform:scale(.97)}
+  .mic .flag{font-size:26px}
+  .mic .sub{font-size:12px; font-weight:400; opacity:.9}
+  .mic.vi{background:var(--vi)}
+  .mic.en{background:var(--en)}
+  .mic.on{filter:brightness(1.15); animation:pulse 1s infinite}
+  .mic.disabled{opacity:.4; pointer-events:none}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}50%{box-shadow:0 0 0 10px rgba(255,255,255,0)}}
+
+  .topbar{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:#fff; border-bottom:1px solid #eee; flex-shrink:0}
+  .toggle{font-size:13px; color:var(--den); display:flex; align-items:center; gap:6px}
+  .toggle input{width:18px; height:18px}
+  .clear{background:none;border:1px solid #ddd;border-radius:8px;padding:6px 12px;font-size:13px;color:var(--xanhduong);cursor:pointer}
+</style>
+</head>
+<body>
+  <header>
+    Dịch hội thoại Việt ⇄ Anh (Mỹ)
+    <small>Bấm nút của người đang nói → app tự dịch &amp; đọc to</small>
+  </header>
+
+  <div class="topbar">
+    <label class="toggle"><input type="checkbox" id="autoSpeak" checked> Tự đọc to bản dịch</label>
+    <button class="clear" id="btnClear">Xóa hội thoại</button>
+  </div>
+
+  <div id="chat">
+    <div class="hint" id="hint">
+      👋 Cách dùng:<br>
+      • Khi <b>anh nói tiếng Việt</b> → bấm nút <b>xanh lá</b> bên trái rồi nói.<br>
+      • Khi <b>người Mỹ/Anh nói</b> → đưa máy cho họ bấm nút <b>xanh dương</b> bên phải.<br>
+      • App sẽ tự dịch và đọc to bằng tiếng của người kia (giọng Anh chuẩn Mỹ).
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div id="dbg"></div>
+
+  <div class="controls">
+    <button class="mic vi" id="micVi">
+      <span class="flag">🇻🇳</span>
+      <span>Tôi nói</span>
+      <span class="sub">Tiếng Việt → Anh</span>
+    </button>
+    <button class="mic en" id="micEn">
+      <span class="flag">🇺🇸</span>
+      <span>I speak</span>
+      <span class="sub">English → Vietnamese</span>
+    </button>
+  </div>
+
+<script>
+const chat = document.getElementById('chat');
+const statusEl = document.getElementById('status');
+const dbgEl = document.getElementById('dbg');
+const micVi = document.getElementById('micVi');
+const micEn = document.getElementById('micEn');
+const autoSpeak = document.getElementById('autoSpeak');
+const hint = document.getElementById('hint');
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizing = false;
+let recog = null;
+let ttsUnlocked = false;
+
+function dbg(msg){ if(dbgEl) dbgEl.textContent = msg; }
+
+// iPhone/iOS chặn tự đọc nếu chưa được "mồi" bằng cú chạm của người dùng.
+function unlockTTS(){
+  if(window.speechSynthesis && !ttsUnlocked){
+    try{
+      ['en-US','vi-VN'].forEach(lg => {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.lang = lg; u.volume = 1;
+        window.speechSynthesis.speak(u); // dấu cách -> im lặng nhưng đủ để mở khóa
+      });
+      ttsUnlocked = true;
+    }catch(e){}
+  }
+}
+
+if(!SR){
+  statusEl.textContent = "⚠️ Trình duyệt này không hỗ trợ nhận giọng nói. iPhone hãy dùng Safari.";
+  micVi.classList.add('disabled'); micEn.classList.add('disabled');
+}
+
+// who: 'vi' = người nói tiếng Việt -> dịch sang Anh
+//      'en' = người nói tiếng Anh  -> dịch sang Việt
+function listen(who){
+  if(!SR) return;
+  unlockTTS();
+  if(recognizing){ recog && recog.stop(); return; }
+
+  const srcLang = who === 'vi' ? 'vi-VN' : 'en-US';
+  const sl = who === 'vi' ? 'vi' : 'en';
+  const tl = who === 'vi' ? 'en' : 'vi';
+
+  recog = new SR();
+  recog.lang = srcLang;
+  recog.interimResults = false;
+  recog.maxAlternatives = 1;
+
+  recog.onstart = () => {
+    recognizing = true;
+    statusEl.classList.add('listening');
+    statusEl.textContent = who==='vi' ? "🎤 Đang nghe tiếng Việt..." : "🎤 Listening in English...";
+    (who==='vi'?micVi:micEn).classList.add('on');
+  };
+  recog.onerror = (e) => {
+    statusEl.classList.remove('listening');
+    if(e.error === 'no-speech') statusEl.textContent = "Không nghe thấy gì, thử lại nhé.";
+    else if(e.error === 'not-allowed') statusEl.textContent = "⚠️ Chưa cấp quyền micro. Hãy cho phép rồi thử lại.";
+    else statusEl.textContent = "Lỗi: " + e.error;
+  };
+  recog.onend = () => {
+    recognizing = false;
+    statusEl.classList.remove('listening');
+    micVi.classList.remove('on'); micEn.classList.remove('on');
+  };
+  recog.onresult = async (ev) => {
+    const text = ev.results[0][0].transcript.trim();
+    if(!text) return;
+    statusEl.textContent = "⏳ Đang dịch...";
+    try{
+      const dich = await translate(text, sl, tl);
+      addBubble(who, text, dich, tl);
+      statusEl.textContent = "";
+      if(autoSpeak.checked) setTimeout(() => speak(dich, tl), 350);
+    }catch(err){
+      statusEl.textContent = "⚠️ Lỗi dịch (kiểm tra mạng).";
+    }
+  };
+  recog.start();
+}
+
+async function translate(text, sl, tl){
+  // Cách 1: Google (miễn phí, không cần key)
+  try{
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+    const r = await fetch(url);
+    if(r.ok){
+      const data = await r.json();
+      const out = data[0].map(x=>x[0]).join('');
+      if(out) return out;
+    }
+  }catch(e){ /* thử cách 2 */ }
+  // Cách 2: MyMemory (dự phòng)
+  const r2 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sl}|${tl}`);
+  const d2 = await r2.json();
+  return d2.responseData.translatedText;
+}
+
+function addBubble(who, orig, dich, tl){
+  hint.style.display = 'none';
+  const side = who === 'vi' ? 'vi' : 'en';
+  const row = document.createElement('div');
+  row.className = 'row ' + side;
+  row.innerHTML = `
+    <div class="who">${who==='vi' ? '🇻🇳 Anh nói' : '🇺🇸 Người Anh/Mỹ nói'}</div>
+    <div class="bubble">${escapeHtml(dich)}<span class="speak">🔊</span></div>
+    <div class="orig">"${escapeHtml(orig)}"</div>`;
+  row.querySelector('.speak').onclick = () => speak(dich, tl);
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function pickVoice(lang){
+  const vs = window.speechSynthesis.getVoices() || [];
+  const L = lang.toLowerCase();
+  let cands = vs.filter(x => x.lang && x.lang.toLowerCase() === L);
+  if(!cands.length){ const base = L.split('-')[0]; cands = vs.filter(x => x.lang && x.lang.toLowerCase().startsWith(base)); }
+  if(!cands.length) return null;
+  if(L === 'en-us'){
+    // Ưu tiên giọng Mỹ chất lượng cao
+    const pref = ['Samantha','Google US English','Ava','Allison','Susan','Nicky','Aaron','Alex','Zoe'];
+    for(const name of pref){ const f = cands.find(v => v.name && v.name.includes(name)); if(f) return f; }
+  }
+  if(L === 'vi-vn'){
+    const pref = ['Linh','Google Tiếng Việt','Google tiếng Việt','Vietnamese'];
+    for(const name of pref){ const f = cands.find(v => v.name && v.name.includes(name)); if(f) return f; }
+  }
+  return cands[0];
+}
+
+function speak(text, lang){
+  if(!window.speechSynthesis){ dbg('Máy không hỗ trợ đọc'); return; }
+  const target = lang === 'en' ? 'en-US' : 'vi-VN';
+  const vs = window.speechSynthesis.getVoices() || [];
+  const v = pickVoice(target);
+  dbg(`Giọng: ${vs.length} | ${target}: ${v ? v.name : 'KHÔNG CÓ GIỌNG NÀY'}`);
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = target;
+  if(v) u.voice = v;
+  u.rate = 0.95;
+  u.onstart = () => dbg(`Đang đọc (${target})...`);
+  u.onerror = (e) => dbg(`Lỗi đọc: ${e.error} (${target})`);
+  window.speechSynthesis.resume();
+  window.speechSynthesis.speak(u);
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+micVi.onclick = () => listen('vi');
+micEn.onclick = () => listen('en');
+document.getElementById('btnClear').onclick = () => {
+  chat.innerHTML = ''; chat.appendChild(hint); hint.style.display = 'block';
+  statusEl.textContent = ''; dbg('');
+};
+
+if(window.speechSynthesis){
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+</script>
+</body>
+</html>
