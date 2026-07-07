@@ -129,8 +129,7 @@ function unlockTTS(){
   if(window.speechSynthesis && !ttsUnlocked){
     try{
       const u = new SpeechSynthesisUtterance(' ');
-      u.volume = 0; // im lặng, chỉ để mở khóa
-      window.speechSynthesis.speak(u);
+      window.speechSynthesis.speak(u); // dấu cách -> im lặng nhưng đủ để mở khóa
       ttsUnlocked = true;
     }catch(e){}
   }
@@ -182,7 +181,8 @@ function listen(who){
       const dich = await translate(text, sl, tl);
       addBubble(who, text, dich, tl);
       statusEl.textContent = "";
-      if(autoSpeak.checked) speak(dich, tl);
+      // iPhone: chờ chút cho micro nhả ra rồi mới đọc, tránh bị nuốt giọng
+      if(autoSpeak.checked) setTimeout(() => speak(dich, tl), 350);
     }catch(err){
       statusEl.textContent = "⚠️ Lỗi dịch (kiểm tra mạng).";
     }
@@ -224,11 +224,21 @@ function addBubble(who, orig, dich, tl){
   chat.scrollTop = chat.scrollHeight;
 }
 
+function pickVoice(lang){
+  const vs = window.speechSynthesis.getVoices() || [];
+  const L = lang.toLowerCase();
+  let v = vs.find(x => x.lang && x.lang.toLowerCase() === L);
+  if(!v){ const base = L.split('-')[0]; v = vs.find(x => x.lang && x.lang.toLowerCase().startsWith(base)); }
+  return v || null;
+}
 function speak(text, lang){
   if(!window.speechSynthesis) return;
+  const target = lang === 'zh-CN' ? 'zh-CN' : 'vi-VN';
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang === 'zh-CN' ? 'zh-CN' : 'vi-VN';
+  u.lang = target;
+  const v = pickVoice(target);
+  if(v) u.voice = v;      // iPhone: chọn đúng giọng, nếu không nó im
   u.rate = 0.95;
   window.speechSynthesis.resume(); // iOS đôi khi cần đánh thức
   window.speechSynthesis.speak(u);
@@ -245,8 +255,11 @@ document.getElementById('btnClear').onclick = () => {
   statusEl.textContent = '';
 };
 
-// Kích hoạt giọng đọc sẵn sàng (một số máy cần)
-window.speechSynthesis && window.speechSynthesis.getVoices();
+// Nạp sẵn danh sách giọng (iPhone nạp trễ)
+if(window.speechSynthesis){
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
 </script>
 </body>
 </html>
