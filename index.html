@@ -121,6 +121,20 @@ const hint = document.getElementById('hint');
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizing = false;
 let recog = null;
+let ttsUnlocked = false;
+
+// iPhone/iOS chặn tự đọc to nếu chưa được "mồi" bằng cú chạm của người dùng.
+// Gọi hàm này ngay khi bấm nút (đang trong cú chạm) để mở khóa giọng đọc.
+function unlockTTS(){
+  if(window.speechSynthesis && !ttsUnlocked){
+    try{
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0; // im lặng, chỉ để mở khóa
+      window.speechSynthesis.speak(u);
+      ttsUnlocked = true;
+    }catch(e){}
+  }
+}
 
 if(!SR){
   statusEl.textContent = "⚠️ Trình duyệt này không hỗ trợ nhận giọng nói. Hãy mở bằng Chrome.";
@@ -131,6 +145,7 @@ if(!SR){
 //      'zh' = người nói tiếng Trung, dịch sang Việt
 function listen(who){
   if(!SR) return;
+  unlockTTS();
   if(recognizing){ recog && recog.stop(); return; }
 
   const srcLang = who === 'vi' ? 'vi-VN' : 'zh-CN';
@@ -215,6 +230,7 @@ function speak(text, lang){
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang === 'zh-CN' ? 'zh-CN' : 'vi-VN';
   u.rate = 0.95;
+  window.speechSynthesis.resume(); // iOS đôi khi cần đánh thức
   window.speechSynthesis.speak(u);
 }
 
