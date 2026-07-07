@@ -233,9 +233,12 @@ function pickVoice(lang){
   let cands = vs.filter(x => x.lang && x.lang.toLowerCase() === L);
   if(!cands.length){ const base = L.split('-')[0]; cands = vs.filter(x => x.lang && x.lang.toLowerCase().startsWith(base)); }
   if(!cands.length) return null;
+  // Ưu tiên giọng có tên "trẻ em" nếu máy có sẵn (hiếm)
+  const kid = cands.find(v => v.name && /kid|child|junior|bé|trẻ/i.test(v.name));
+  if(kid) return kid;
   if(L === 'en-us'){
-    // Ưu tiên giọng Mỹ chất lượng cao
-    const pref = ['Samantha','Google US English','Ava','Allison','Susan','Nicky','Aaron','Alex','Zoe'];
+    // Ưu tiên giọng nữ Mỹ (gần giọng bé nhất sau khi nâng pitch)
+    const pref = ['Samantha','Ava','Allison','Susan','Zoe','Nicky','Google US English'];
     for(const name of pref){ const f = cands.find(v => v.name && v.name.includes(name)); if(f) return f; }
   }
   if(L === 'vi-vn'){
@@ -255,7 +258,8 @@ function speak(text, lang){
   const u = new SpeechSynthesisUtterance(text);
   u.lang = target;
   if(v) u.voice = v;
-  u.rate = 0.95;
+  u.pitch = 1.6;   // nâng cao độ -> nghe như giọng trẻ em
+  u.rate = 1.0;    // tốc độ tươi, tự nhiên cho bé
   u.onstart = () => dbg(`Đang đọc (${target})...`);
   u.onerror = (e) => dbg(`Lỗi đọc: ${e.error} (${target})`);
   window.speechSynthesis.resume();
