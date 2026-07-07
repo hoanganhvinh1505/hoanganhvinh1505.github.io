@@ -96,6 +96,7 @@
   </div>
 
   <div id="status"></div>
+  <div id="dbg" style="text-align:center;font-size:12px;color:#8a8f98;padding:0 8px 4px;min-height:16px"></div>
 
   <div class="controls">
     <button class="mic vi" id="micVi">
@@ -128,8 +129,12 @@ let ttsUnlocked = false;
 function unlockTTS(){
   if(window.speechSynthesis && !ttsUnlocked){
     try{
-      const u = new SpeechSynthesisUtterance(' ');
-      window.speechSynthesis.speak(u); // dấu cách -> im lặng nhưng đủ để mở khóa
+      // Mồi cả 2 giọng ngay trong cú chạm để iPhone chịu mở khóa & tải giọng Trung
+      ['zh-CN','vi-VN'].forEach(lg => {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.lang = lg; u.volume = 1;
+        window.speechSynthesis.speak(u); // dấu cách -> im lặng
+      });
       ttsUnlocked = true;
     }catch(e){}
   }
@@ -231,15 +236,23 @@ function pickVoice(lang){
   if(!v){ const base = L.split('-')[0]; v = vs.find(x => x.lang && x.lang.toLowerCase().startsWith(base)); }
   return v || null;
 }
+const dbgEl = document.getElementById('dbg');
+function dbg(msg){ if(dbgEl) dbgEl.textContent = msg; }
+
 function speak(text, lang){
-  if(!window.speechSynthesis) return;
+  if(!window.speechSynthesis){ dbg('May khong ho tro doc'); return; }
   const target = lang === 'zh-CN' ? 'zh-CN' : 'vi-VN';
+  const vs = window.speechSynthesis.getVoices() || [];
+  const v = pickVoice(target);
+  dbg(`Giong: ${vs.length} | ${target}: ${v ? v.name : 'KHONG CO GIONG NAY'}`);
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = target;
-  const v = pickVoice(target);
   if(v) u.voice = v;      // iPhone: chọn đúng giọng, nếu không nó im
   u.rate = 0.95;
+  u.onstart = () => dbg(`Dang doc (${target})...`);
+  u.onend   = () => dbg(`Doc xong (${target})`);
+  u.onerror = (e) => dbg(`Loi doc: ${e.error} (${target})`);
   window.speechSynthesis.resume(); // iOS đôi khi cần đánh thức
   window.speechSynthesis.speak(u);
 }
